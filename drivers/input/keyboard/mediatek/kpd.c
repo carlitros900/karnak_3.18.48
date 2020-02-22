@@ -30,6 +30,15 @@
 #define MTK_KP_WAKESOURCE	/* this is for auto set wake up source */
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#ifdef CONFIG_TOUCHSCREEN_SMARTWAKE
+#include <linux/input/smartwake.h>
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
+#endif
+
 void __iomem *kp_base;
 static unsigned int kp_irqnr;
 struct input_dev *kpd_input_dev;
@@ -1011,6 +1020,18 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 #endif
 	if (kpd_dts_data.kpd_sw_rstkey)
 		__set_bit(kpd_dts_data.kpd_sw_rstkey, kpd_input_dev->keybit);
+
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#ifdef CONFIG_TOUCHSCREEN_SMARTWAKE
+	smartwake_setdev(kpd_input_dev);
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+	doubletap2wake_setdev(kpd_input_dev);
+#endif
+#endif
+
+
 #ifdef KPD_KEY_MAP
 	__set_bit(KPD_KEY_MAP, kpd_input_dev->keybit);
 #endif

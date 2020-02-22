@@ -30,6 +30,10 @@
 #include <linux/metricslog.h>
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_SMARTWAKE
+#include <linux/input/smartwake.h>
+#endif
+
 static const char *goodix_ts_name = "goodix-ts";
 static const char *goodix_input_phys = "input/ts";
 static struct workqueue_struct *goodix_wq;
@@ -381,6 +385,10 @@ Output:
 *********************************************************/
 static void gtp_touch_down(struct goodix_ts_data *ts, s32 id, s32 x, s32 y, s32 w)
 {
+#if defined CONFIG_POCKETMOD && defined CONFIG_TOUCHSCREEN_SMARTWAKE
+       if (display_off) == 1))
+           return;
+#endif
 #if GTP_CHANGE_X2Y
 	GTP_SWAP(x, y);
 #endif
