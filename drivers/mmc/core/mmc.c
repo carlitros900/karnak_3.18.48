@@ -1388,7 +1388,7 @@ static int emmcmetrics_read(struct mmc_host *host)
 
 	/* Samsung eMMC */
 	pr_info("Trying to read Samsung eMMC stats\n");
-	/* Sumsung Smart Report is not working for Biscuit eMMC part
+	/* Sumsung Smart Report is not working for abh123 eMMC part
 	 * TBD once we have information from Samsung */
 	goto done;
 

@@ -1163,7 +1163,7 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 		 * and CMD6 will retry 3 times, must ensure card is in transfer
 		 * state when retry.
 		 */
-		tmo = jiffies + msecs_to_jiffies(60 * 1000);
+		tmo = jiffies + msecs_to_jiffies(5 * 1000);
 		while (1) {
 			if (!(readl(host->base + MSDC_PS) & BIT(16))) {
 				if (in_interrupt()) {

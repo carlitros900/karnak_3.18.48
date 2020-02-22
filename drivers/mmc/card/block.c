@@ -51,6 +51,10 @@
 #include <linux/vmalloc.h>
 #include <linux/memblock.h>
 
+#ifdef CONFIG_AMAZON_METRICS_LOG
+#include <linux/metricslog.h>
+#endif
+
 #ifdef CONFIG_MTK_EXTMEM
 #include <linux/exm_driver.h>
 #endif
@@ -1184,12 +1188,24 @@ static int mmc_blk_reset(struct mmc_blk_data *md, struct mmc_host *host,
 			 int type)
 {
 	int err;
+#ifdef CONFIG_AMAZON_METRICS_LOG
+	char buf[40]= {0};
+#endif
 
 	if (md->reset_done & type)
 		return -EEXIST;
 
 	md->reset_done |= type;
 	err = mmc_hw_reset(host);
+
+#ifdef CONFIG_AMAZON_METRICS_LOG
+	if (!err && !(host->caps & MMC_CAP_NONREMOVABLE)) {
+		snprintf(buf, sizeof(buf),
+			"sdreset:def:sdcard_reset=1;CT;1:NR");
+		log_to_metrics(ANDROID_LOG_INFO, "SDResetEvent", buf);
+	}
+#endif
+
 	/* Ensure we switch back to the correct partition */
 	if (err != -EOPNOTSUPP) {
 		struct mmc_blk_data *main_md = mmc_get_drvdata(host->card);

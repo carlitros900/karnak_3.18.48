@@ -46,6 +46,14 @@
 #include <linux/metricslog.h>
 #define VIRTUAL_SENSOR_METRICS_STR_LEN 128
 static unsigned long virtual_sensor_temp = 25000;
+/*
+ * Define the metrics log printing interval.
+ * If virtual sensor throttles, the interval
+ * is 0x7F*1 seconds(1 means polling interval of virtual_sensor).
+ * If doesn't throttle, the interval is 0xFFF*1 seconds.
+ */
+#define VIRTUAL_SENSOR_THROTTLE_TIME_MASK 0x7F
+#define VIRTUAL_SENSOR_UNTHROTTLE_TIME_MASK 0xFFF
 #endif
 
 #include "thermal_core.h"
@@ -94,7 +102,6 @@ int thermal_level_compare(struct mtk_cooler_platform_data *cooler_data, struct c
 }
 
 #define PREFIX "thermalsensor:def"
-#define MASK (0x0FFF)
 
 static int match(struct thermal_zone_device *tz,
 	  struct thermal_cooling_device *cdev)
@@ -146,17 +153,13 @@ static int virtual_sensor_thermal_get_temp(struct thermal_zone_device *thermal,
 	int alpha, offset, weight;
 #ifdef CONFIG_AMAZON_METRICS_LOG
 	char buf[VIRTUAL_SENSOR_METRICS_STR_LEN];
-	static atomic_t query_count;
-	unsigned count;
-	static unsigned int mask = 0xDFF;
 #endif
 
 	if (!tzone || !pdata)
 		return -EINVAL;
 
 #ifdef CONFIG_AMAZON_METRICS_LOG
-	count = atomic_read(&query_count);
-	atomic_inc(&query_count);
+	atomic_inc(&tzone->query_count);
 #endif
 
 	list_for_each_entry(tdev, &pdata->ts_list, node) {
@@ -164,10 +167,10 @@ static int virtual_sensor_thermal_get_temp(struct thermal_zone_device *thermal,
 #ifdef CONFIG_AMAZON_METRICS_LOG
 		/* Log in metrics around every 1 hour normally
 			and 2 mins wheny throttling */
-		if (!(count & mask)) {
+		if (!(atomic_read(&tzone->query_count) & tzone->mask)) {
 			snprintf(buf, VIRTUAL_SENSOR_METRICS_STR_LEN,
-				"%s:%s_temp=%ld;CT;1:NR",
-				PREFIX, tdev->name, temp);
+				"%s:%s_%s_temp=%ld;CT;1:NR",
+				PREFIX, thermal->type, tdev->name, temp);
 			log_to_metrics(ANDROID_LOG_INFO, "ThermalEvent", buf);
 		}
 #endif
@@ -189,17 +192,17 @@ static int virtual_sensor_thermal_get_temp(struct thermal_zone_device *thermal,
 #ifdef CONFIG_AMAZON_METRICS_LOG
 	/* Log in metrics around every 1 hour normally
 		and 2 mins wheny throttling */
-	if (!(count & mask)) {
+	if (!(atomic_read(&tzone->query_count) & tzone->mask)) {
 		snprintf(buf, VIRTUAL_SENSOR_METRICS_STR_LEN,
-			"%s:pcb_temp=%ld;CT;1:NR",
-			PREFIX, tempv);
+			"%s:%s_temp=%ld;CT;1:NR",
+			PREFIX, thermal->type, tempv);
 		log_to_metrics(ANDROID_LOG_INFO, "ThermalEvent", buf);
 	}
 
 	if (tempv > pdata->trips[0].temp)
-		mask = 0x3F;
+		tzone->mask = VIRTUAL_SENSOR_THROTTLE_TIME_MASK;
 	else
-		mask = 0xDFF;
+		tzone->mask = VIRTUAL_SENSOR_UNTHROTTLE_TIME_MASK;
 #endif
 
 	*t = (unsigned long) tempv;
@@ -739,6 +742,10 @@ static int virtual_sensor_thermal_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 	tzone->tz->trips = pdata->num_trips;
+
+#ifdef CONFIG_AMAZON_METRICS_LOG
+	tzone->mask = VIRTUAL_SENSOR_UNTHROTTLE_TIME_MASK;
+#endif
 	ret = virtual_sensor_create_sysfs(tzone);
 	INIT_WORK(&tzone->therm_work, virtual_sensor_thermal_work);
 	platform_set_drvdata(pdev, tzone);
