@@ -166,7 +166,8 @@ MGMT_OBJS := $(MGMT_DIR)ais_fsm.o \
              $(MGMT_DIR)swcr.o \
  			 $(MGMT_DIR)swcr.o \
 			 $(MGMT_DIR)roaming_fsm.o \
-			 $(MGMT_DIR)hs20.o
+			 $(MGMT_DIR)hs20.o \
+             $(MGMT_DIR)wnm.o
 
 # ---------------------------------------------------
 # TDLS Objects List

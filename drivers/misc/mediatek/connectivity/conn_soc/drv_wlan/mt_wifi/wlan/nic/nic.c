@@ -1871,6 +1871,10 @@ UINT_32 nicFreq2ChannelNum(UINT_32 u4FreqInKHz)
 		return 136;
 	case 5700000:
 		return 140;
+#ifdef CONFIG_WIFI_DFS_CHANNEL
+	case 5720000:
+		return 144;
+#endif
 	case 5745000:
 		return 149;
 	case 5765000:
@@ -2014,7 +2018,16 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T 
 	if (rCmdSetBssInfo.ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX) {
 		P_CONNECTION_SETTINGS_T prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 
+#if CFG_SUPPORT_802_11R
+		/* Firmware didn't define AUTH_MODE_NON_RSN_FT, so AUTH_MODE_OPEN is zero in firmware,
+			but it is 1 in driver. so we need to minus 1 for all authmode except AUTH_MODE_NON_RSN_FT,
+			because AUTH_MODE_NON_RSN_FT will be same as AUTH_MODE_OPEN in firmware */
+		if (prConnSettings->eAuthMode != AUTH_MODE_NON_RSN_FT)
+			rCmdSetBssInfo.ucAuthMode = (UINT_8)prConnSettings->eAuthMode - 1;
+		else
+#endif
 		rCmdSetBssInfo.ucAuthMode = (UINT_8) prConnSettings->eAuthMode;
+
 		rCmdSetBssInfo.ucEncStatus = (UINT_8) prConnSettings->eEncStatus;
 		rCmdSetBssInfo.fgWapiMode = (UINT_8) prConnSettings->fgWapiMode;
 	}
