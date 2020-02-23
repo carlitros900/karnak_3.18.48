@@ -62,8 +62,8 @@ MODULE_LICENSE("GPLv2");
 #define SMARTWAKE_DEFAULT               1
 #define SMARTWAKE_KEY_DUR               60
 
-#define SMARTWAKE_Y_DISTANCE            800
-#define SMARTWAKE_X_DISTANCE            450
+#define SMARTWAKE_Y_DISTANCE            1280
+#define SMARTWAKE_X_DISTANCE            800
 #define MIN_DELTA                       5
 
 /* directions */
