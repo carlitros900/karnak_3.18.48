@@ -52,11 +52,6 @@
 #define ANDROID_TOUCH_DECLARED
 #endif
 
-/* Pocket_Mod Support */
-#ifdef CONFIG_POCKETMOD
-#include <linux/pocket_mod.h>
-#endif
-
 /* Version, author, desc, etc */
 #define DRIVER_AUTHOR "Dennis Rassmann <showp1984@gmail.com>"
 #define DRIVER_DESCRIPTION "Doubletap2wake for almost any device"
@@ -196,12 +191,6 @@ static void detect_doubletap2wake(int x, int y, bool st)
 }
 
 static void dt2w_input_callback(struct work_struct *unused) {
-#ifdef CONFIG_POCKETMOD
-	if (device_is_pocketed()){
-		return;
-	}
-	else
-#endif
         detect_doubletap2wake(touch_x, touch_y, true);
 
 	return;

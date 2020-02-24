@@ -46,12 +46,6 @@
 /* uncomment since no touchscreen defines android touch, do that here */
 //#define ANDROID_TOUCH_DECLARED
 
-/* Pocket_Mod Support */
-#ifdef CONFIG_POCKETMOD
-#include <linux/pocket_mod.h>
-static bool pocketed = false;
-#endif
-
 /* Version, author, desc, etc */
 #define DRIVER_AUTHOR "Dominik Baronelli aka DerTeufel1980 <dominik.baronelli@gmail.com>"
 #define DRIVER_DESCRIPTION "generic smartwake driver"
@@ -173,9 +167,6 @@ static void smartwake_reset(void) {
         end_x = 0;
         end_y = 0;
 	old_direction = 0;
-#ifdef CONFIG_POCKETMOD
-	pocketed = false;
-#endif
 	for (i = 0; i < 2; i++) {
 	        direction[i] = 0;
 	}

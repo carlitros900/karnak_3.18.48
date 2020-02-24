@@ -389,6 +389,16 @@ static struct tpd_driver_t *g_tpd_drv;
 /* hh: use fb_notifier */
 static struct notifier_block tpd_fb_notifier;
 /* use fb_notifier */
+static void touch_resume_workqueue_callback(struct work_struct *work)
+{
+	TPD_DEBUG("GTP touch_resume_workqueue_callback\n");
+	g_tpd_drv->resume(NULL);
+	tpd_suspend_flag = 0;
+#ifdef CONFIG_TOUCHSCREEN_SMARTWAKE
+	display_off = false;
+#endif
+
+}
 static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = NULL;
@@ -405,7 +415,8 @@ static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long e
 	TPD_DMESG("fb_notify(blank=%d)\n", blank);
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
-		TPD_DMESG("LCD ON Notify\n") {
+		TPD_DMESG("LCD ON Notify\n");
+		if (g_tpd_drv && tpd_suspend_flag) {
 #ifdef CONFIG_TOUCHSCREEN_SMARTWAKE
                         if (smartwake_switch) {
 		                err = cancel_work_sync(&touch_resume_work);
@@ -414,9 +425,12 @@ static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long e
 				        TPD_DMESG("cancel touch_resume_workqueue err = %d\n", err);
 			}
 #endif
-		if (g_tpd_drv && tpd_suspend_flag)
-			g_tpd_drv->resume(NULL);
-		tpd_suspend_flag = 0;
+			err = queue_work(touch_resume_workqueue, &touch_resume_work);
+			if (!err) {
+				TPD_DMESG("start touch_resume_workqueue failed\n");
+				return err;
+			}
+		}
 		break;
 	case FB_BLANK_POWERDOWN:
 		TPD_DMESG("LCD OFF Notify\n");
@@ -425,8 +439,11 @@ static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long e
 #else
 		if (g_tpd_drv) {
 #endif
-		if (g_tpd_drv)
+			err = cancel_work_sync(&touch_resume_work);
+			if (!err)
+				TPD_DMESG("cancel touch_resume_workqueue err = %d\n", err);
 			g_tpd_drv->suspend(NULL);
+		}
 		tpd_suspend_flag = 1;
 #ifdef CONFIG_TOUCHSCREEN_SMARTWAKE
 		display_off = true;
